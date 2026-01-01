@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>voice</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #050505 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .captcha-container {
+            background: #121212;
+            border: 1px solid #222222;
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+            text-align: center;
+        }
+        
+        .header {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #222222;
+        }
+        
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .step {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #333;
+        }
+        
+        .step.completed {
+            background: #00b894;
+        }
+        
+        .step.active {
+            background: #8a2be2;
+        }
+        
+        h1 {
+            color: #8a2be2;
+            margin-bottom: 10px;
+            font-size: 1.8rem;
+        }
+        
+        .instructions {
+            margin-bottom: 30px;
+            line-height: 1.6;
+            color: #a0a0a0;
+        }
+        
+        .phrase-container {
+            background: rgba(138, 43, 226, 0.1);
+            border: 2px solid #8a2be2;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 25px 0;
+            text-align: center;
+        }
+        
+        .phrase {
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: #8a2be2;
+            margin: 15px 0;
+            line-height: 1.3;
+            text-shadow: 0 0 15px rgba(138, 43, 226, 0.5);
+            font-family: 'Georgia', serif;
+            padding: 15px;
+            border-radius: 10px;
+            background: rgba(138, 43, 226, 0.05);
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 25px 0;
+            flex-wrap: wrap;
+        }
+        
+        .control-btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            min-width: 170px;
+            justify-content: center;
+        }
+        
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .record-btn {
+            background: linear-gradient(135deg, #8a2be2, #5a189a);
+            color: white;
+        }
+        
+        .record-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(138, 43, 226, 0.5);
+        }
+        
+        .record-btn.recording {
+            background: linear-gradient(135deg, #e17055, #d63031);
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(225, 112, 85, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(225, 112, 85, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(225, 112, 85, 0); }
+        }
+        
+        .stop-btn {
+            background: linear-gradient(135deg, #333, #222);
+            color: white;
+            border: 1px solid #444;
+        }
+        
+        .recording-status {
+            display: none;
+            align-items: center;
+            gap: 12px;
+            padding: 15px 25px;
+            background: linear-gradient(135deg, #e17055, #d63031);
+            border-radius: 12px;
+            font-weight: 600;
+            color: white;
+            margin: 20px auto;
+            max-width: 300px;
+            justify-content: center;
+        }
+        
+        .recording-status.active {
+            display: flex;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .pulse-dot {
+            width: 12px;
+            height: 12px;
+            background: white;
+            border-radius: 50%;
+            animation: dotPulse 1s infinite;
+        }
+        
+        @keyframes dotPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.7; }
+        }
+        
+        .result-container {
+            background: rgba(30, 30, 30, 0.8);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 25px 0;
+            display: none;
+            animation: slideIn 0.5s ease;
+        }
+        
+        .result-container.show {
+            display: block;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .result-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .result-icon {
+            font-size: 36px;
+        }
+        
+        .result-text {
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+        
+        .success {
+            color: #00b894;
+        }
+        
+        .error {
+            color: #fdcb6e;
+        }
+        
+        .recognized-text {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-size: 1.3rem;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            word-break: break-word;
+            border: 2px solid #333;
+        }
+        
+        .progress-container {
+            margin: 25px 0;
+        }
+        
+        .progress-bar {
+            height: 12px;
+            background: #333;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            border: 1px solid #444;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #e17055, #fdcb6e, #00b894);
+            border-radius: 6px;
+            transition: width 1s ease;
+        }
+        
+        .progress-labels {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+        }
+        
+        .progress-label {
+            font-size: 0.9rem;
+            color: #a0a0a0;
+        }
+        
+        .progress-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #8a2be2;
+            font-family: monospace;
+        }
+        
+        .auto-transition {
+            margin: 30px 0;
+            padding: 25px;
+            background: rgba(0, 184, 148, 0.1);
+            border-radius: 15px;
+            border: 3px solid rgba(0, 184, 148, 0.3);
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+        
+        .auto-transition.show {
+            display: block;
+        }
+        
+        .countdown {
+            font-size: 3.5rem;
+            font-weight: bold;
+            color: #00b894;
+            margin: 15px 0;
+            font-family: monospace;
+            text-shadow: 0 0 20px rgba(0, 184, 148, 0.5);
+        }
+        
+        .transition-text {
+            color: #a0a0a0;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+        
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .action-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .retry-btn {
+            background: #333;
+            color: #a0a0a0;
+            border: 1px solid #444;
+        }
+        
+        .retry-btn:hover {
+            background: #444;
+            color: #e0e0e0;
+        }
+        
+        .browser-warning {
+            color: #fdcb6e;
+            background: rgba(253, 203, 110, 0.1);
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            font-size: 0.95rem;
+            border: 2px solid rgba(253, 203, 110, 0.3);
+            display: none;
+            line-height: 1.5;
+        }
+        
+        .browser-warning.show {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .phrase-hint {
+            color: #fdcb6e;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            font-style: italic;
+        }
+        
+        .success-animation {
+            animation: successPulse 2s infinite;
+        }
+        
+        @keyframes successPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .waiting-message {
+            color: #8a2be2;
+            margin: 20px 0;
+            font-size: 1.1rem;
+            padding: 15px;
+            background: rgba(138, 43, 226, 0.1);
+            border-radius: 10px;
+            border: 2px solid rgba(138, 43, 226, 0.3);
+        }
+        
+        .target-range {
+            background: rgba(0, 184, 148, 0.1);
+            border: 2px solid rgba(0, 184, 148, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: center;
+        }
+        
+        .target-title {
+            color: #00b894;
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+        
+        .target-description {
+            color: #a0a0a0;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+        
+        .target-zone {
+            display: inline-block;
+            padding: 5px 15px;
+            background: linear-gradient(135deg, #00b894, #8a2be2);
+            color: white;
+            border-radius: 20px;
+            font-weight: bold;
+            margin: 5px;
+            font-size: 1.1rem;
+        }
+        
+        .high-accuracy {
+            color: #00cec9;
+        }
+        
+        .high-accuracy-animation {
+            animation: highAccuracyPulse 2s infinite;
+        }
+        
+        @keyframes highAccuracyPulse {
+            0%, 100% { 
+                transform: scale(1); 
+                box-shadow: 0 0 20px rgba(0, 206, 201, 0.3);
+            }
+            50% { 
+                transform: scale(1.03); 
+                box-shadow: 0 0 30px rgba(0, 206, 201, 0.5);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="captcha-container">
+        <div class="header">
+            <div class="step-indicator">
+                <div class="step completed">1</div>
+                <div class="step active">2</div>
+                <div class="step">3</div>
+            </div>
+            <h1>ТЕПЕРЬ ЧЕ</h1>
+            <div class="instructions">
+                А ТЕПЕРЬ ПРОЦЕНТ СРЕЗАН НАХУЙ С 65 ДО 92.
+            </div>
+        </div>
+        
+        <div class="target-range">
+            <div class="target-title">НУ ДАВАЙ ЧИТАЙ СТРОЧКУ ЛЮБИМОГО ИСПОЛНИТЕЛЯ.</div>
+            <div class="target-description">
+                НУЖНО НАБРАТЬ А Я УЖЕ ПИСАЛ СКОЛЬКО 
+                <span class="target-zone"> НО ТЫ НЕ ЗАБЫВАЙ МИНИМУМ 92%</span> 
+                <br>
+                <small>РЕКЛАМУ ТАК И НЕ ЗАКУПИЛИ ЖДАЛ ГОД.</small>
+            </div>
+        </div>
+        
+        <div class="phrase-container">
+            <div class="phrase" id="phrase">То что я лизал тебе забудь я был под кодеином</div>
+            <div class="phrase-hint">А И ЕЩЕ СТОИТ ПЛАГИН КОТОРЫЙ ВСЕ ПОПЫТКИ МНЕ СКИДЫВАЕТ.</div>
+            <div class="phrase-hint">ТЕПЕЬ МУТ ДСА НЕ ПОМОЖЕТ, ОБНЯЛ.</div>
+        </div>
+        
+        <div class="waiting-message" id="waitingMessage">
+            ⏳ ЖМАЙ НАЧАТЬ"
+        </div>
+        
+        <div class="browser-warning" id="browserWarning">
+            ⚠️ Для работы необходим браузер с поддержкой распознавания речи (Chrome, Edge).
+            Убедитесь, что микрофон подключен и разрешен доступ.
+        </div>
+        
+        <div class="controls">
+            <button class="control-btn record-btn" id="startBtn">
+                <span>🎤</span> НАЧАТЬ
+            </button>
+            <button class="control-btn stop-btn" id="stopBtn" disabled>
+                <span>⏹️</span> ОСТАНОВИТЬ
+            </button>
+        </div>
+        
+        <div class="recording-status" id="recordingStatus">
+            <div class="pulse-dot"></div>
+            А ЗАПИСЬ ТО ИДЕТ.
+        </div>
+        
+        <div class="result-container" id="resultContainer">
+            <div class="result-header">
+                <div class="result-icon" id="resultIcon">🎯</div>
+                <div class="result-text" id="resultText">АНАЛИЗ РЕЗУЛЬТАТА</div>
+            </div>
+            
+            <div class="recognized-text" id="recognizedText">
+                Распознанный текст появится здесь...
+            </div>
+            
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-labels">
+                    <div class="progress-label">ТОЧНОСТЬ РАСПОЗНАВАНИЯ</div>
+                    <div class="progress-value" id="confidenceValue">0%</div>
+                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <button class="action-btn retry-btn" onclick="retryRecording()">
+                    <span>🔄</span> ПОПРОБОВАТЬ ЕЩЕ РАЗ
+                </button>
+            </div>
+        </div>
+        
+        <div class="auto-transition" id="autoTransition">
+            <div class="countdown" id="countdown">3</div>
+            <div class="transition-text">
+                ✅ УСПЕШНОЕ РАСПОЗНАВАНИЕ АХАХХАА<br>
+                Автоматический переход через <span id="secondsLeft">3</span> секунды
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== КОНФИГУРАЦИЯ ==========
+        const CONFIG = {
+            targetPhrase: 'То что я лизал тебе забудь я был под кодеином',
+            successThreshold: 92,     // Минимальный порог для успеха
+            highAccuracyThreshold: 95, // Высокая точность
+            transitionTime: 3,
+            
+            // Настройки распознавания
+            recognitionConfig: {
+                lang: 'ru-RU',
+                continuous: true,
+                interimResults: true,
+                maxAlternatives: 5,
+                audioConstraints: {
+                    sampleRate: 48000,
+                    echoCancellation: true,
+                    noiseSuppression: true
+                }
+            }
+        };
+        
+        // ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
+        let SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition = null;
+        let isRecording = false;
+        let transitionTimer = null;
+        let countdownValue = CONFIG.transitionTime;
+        let sessionId = Date.now();
+        let currentScore = 0;
+        
+        // ========== DOM ЭЛЕМЕНТЫ ==========
+        const elements = {
+            startBtn: document.getElementById('startBtn'),
+            stopBtn: document.getElementById('stopBtn'),
+            recordingStatus: document.getElementById('recordingStatus'),
+            resultContainer: document.getElementById('resultContainer'),
+            recognizedText: document.getElementById('recognizedText'),
+            resultIcon: document.getElementById('resultIcon'),
+            resultText: document.getElementById('resultText'),
+            progressFill: document.getElementById('progressFill'),
+            confidenceValue: document.getElementById('confidenceValue'),
+            autoTransition: document.getElementById('autoTransition'),
+            countdown: document.getElementById('countdown'),
+            secondsLeft: document.getElementById('secondsLeft'),
+            browserWarning: document.getElementById('browserWarning'),
+            phrase: document.getElementById('phrase'),
+            waitingMessage: document.getElementById('waitingMessage')
+        };
+        
+        // ========== ИНИЦИАЛИЗАЦИЯ ==========
+        function init() {
+            console.log(`[VoiceCaptcha ${sessionId}] Инициализация с порогом 92%...`);
+            
+            // Очистка предыдущих данных
+            localStorage.removeItem('captcha2Success');
+            localStorage.removeItem('captcha2Phrase');
+            localStorage.removeItem('captcha2Score');
+            
+            // Проверяем поддержку браузера
+            const isSupported = checkBrowserSupport();
+            
+            if (isSupported) {
+                initRecognition();
+                elements.waitingMessage.style.display = 'block';
+            }
+            
+            // Назначаем обработчики
+            elements.startBtn.addEventListener('click', startRecording);
+            elements.stopBtn.addEventListener('click', stopRecording);
+            
+            // Анимация фразы
+            animatePhrase();
+            
+            console.log(`[VoiceCaptcha ${sessionId}] Порог 92% активирован`);
+        }
+        
+        // ========== ПРОВЕРКА ПОДДЕРЖКИ БРАУЗЕРА ==========
+        function checkBrowserSupport() {
+            if (!SpeechRecognition) {
+                elements.browserWarning.classList.add('show');
+                elements.startBtn.disabled = true;
+                elements.startBtn.innerHTML = '<span>🚫</span> НЕ ПОДДЕРЖИВАЕТСЯ';
+                console.warn(`[VoiceCaptcha ${sessionId}] Браузер не поддерживает SpeechRecognition API`);
+                return false;
+            }
+            
+            console.log(`[VoiceCaptcha ${sessionId}] Браузер поддерживает SpeechRecognition API`);
+            return true;
+        }
+        
+        // ========== ИНИЦИАЛИЗАЦИЯ РАСПОЗНАВАНИЯ ==========
+        function initRecognition() {
+            try {
+                recognition = new SpeechRecognition();
+                
+                // Настройки для лучшего распознавания
+                recognition.lang = CONFIG.recognitionConfig.lang;
+                recognition.continuous = CONFIG.recognitionConfig.continuous;
+                recognition.interimResults = CONFIG.recognitionConfig.interimResults;
+                recognition.maxAlternatives = CONFIG.recognitionConfig.maxAlternatives;
+                
+                console.log(`[VoiceCaptcha ${sessionId}] Распознавание инициализировано для порога 92%`);
+                
+                recognition.onstart = function() {
+                    isRecording = true;
+                    elements.recordingStatus.classList.add('active');
+                    elements.startBtn.disabled = true;
+                    elements.startBtn.classList.add('recording');
+                    elements.stopBtn.disabled = false;
+                    elements.waitingMessage.style.display = 'none';
+                    console.log(`[VoiceCaptcha ${sessionId}] Запись начата`);
+                };
+                
+                recognition.onresult = function(event) {
+                    const result = event.results[0];
+                    
+                    // Анализируем все альтернативы для лучшего результата
+                    let bestScore = 0;
+                    let bestTranscript = '';
+                    
+                    for (let i = 0; i < result.length; i++) {
+                        const alternative = result[i];
+                        const transcript = alternative.transcript.toLowerCase().trim();
+                        const confidence = alternative.confidence;
+                        
+                        const analysis = analyzeSimilarity(transcript, CONFIG.targetPhrase);
+                        const confidencePercent = Math.round(confidence * 100);
+                        const similarityPercent = Math.round(analysis.similarity * 100);
+                        
+                        // Комбинированная оценка
+                        const score = Math.round(
+                            (confidencePercent * 0.4) + 
+                            (similarityPercent * 0.6)
+                        );
+                        
+                        if (score > bestScore) {
+                            bestScore = score;
+                            bestTranscript = transcript;
+                        }
+                    }
+                    
+                    console.log(`[VoiceCaptcha ${sessionId}] Лучший результат: "${bestTranscript}" (оценка: ${bestScore}%)`);
+                    
+                    processResult(bestTranscript, bestScore);
+                };
+                
+                recognition.onerror = function(event) {
+                    console.error(`[VoiceCaptcha ${sessionId}] Ошибка: ${event.error}`);
+                    
+                    let errorMessage = 'Ошибка распознавания';
+                    switch (event.error) {
+                        case 'no-speech':
+                            errorMessage = 'Речь не обнаружена. Попробуйте говорить громче.';
+                            break;
+                        case 'audio-capture':
+                            errorMessage = 'Микрофон не найден. Проверьте подключение микрофона.';
+                            break;
+                        case 'not-allowed':
+                            errorMessage = 'Доступ к микрофону запрещен. Разрешите доступ в настройках браузера.';
+                            break;
+                        default:
+                            errorMessage = `Ошибка: ${event.error}`;
+                    }
+                    
+                    showError(errorMessage);
+                    stopRecording();
+                };
+                
+                recognition.onend = function() {
+                    console.log(`[VoiceCaptcha ${sessionId}] Запись завершена`);
+                    stopRecording();
+                };
+                
+            } catch (error) {
+                console.error(`[VoiceCaptcha ${sessionId}] Ошибка инициализации:`, error);
+                showError('Не удалось инициализировать распознавание речи');
+            }
+        }
+        
+        // ========== АНАЛИЗ СХОДСТВА ==========
+        function analyzeSimilarity(recognized, target) {
+            const normalizeText = (text) => {
+                return text.toLowerCase()
+                    .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, '')
+                    .replace(/\s{2,}/g, ' ')
+                    .trim();
+            };
+            
+            const recognizedNormalized = normalizeText(recognized);
+            const targetNormalized = normalizeText(target);
+            
+            // Проверка точного совпадения
+            if (recognizedNormalized === targetNormalized) {
+                return { similarity: 1.0, matchedWords: targetNormalized.split(' ').length };
+            }
+            
+            const recognizedWords = recognizedNormalized.split(/\s+/);
+            const targetWords = targetNormalized.split(/\s+/);
+            
+            let totalScore = 0;
+            let matchedWords = 0;
+            
+            // Анализ каждого слова
+            targetWords.forEach((targetWord, targetIndex) => {
+                let bestScore = 0;
+                
+                recognizedWords.forEach((recognizedWord, recIndex) => {
+                    let score = 0;
+                    
+                    // Полное совпадение слова
+                    if (recognizedWord === targetWord) {
+                        score = 1.0;
+                    }
+                    // Частичное совпадение
+                    else if (recognizedWord.includes(targetWord) || targetWord.includes(recognizedWord)) {
+                        const minLen = Math.min(recognizedWord.length, targetWord.length);
+                        const maxLen = Math.max(recognizedWord.length, targetWord.length);
+                        score = 0.9 * (minLen / maxLen);
+                    }
+                    // Похожие слова (первые 3 буквы)
+                    else if (recognizedWord.slice(0, 3) === targetWord.slice(0, 3)) {
+                        score = 0.7;
+                    }
+                    // Похожие слова (первые 2 буквы)
+                    else if (recognizedWord.slice(0, 2) === targetWord.slice(0, 2)) {
+                        score = 0.5;
+                    }
+                    // Минимальное сходство
+                    else if (recognizedWord[0] === targetWord[0]) {
+                        score = 0.3;
+                    }
+                    
+                    // Бонус за правильную позицию
+                    if (score > 0 && targetIndex === recIndex) {
+                        score = Math.min(1.0, score + 0.2);
+                    }
+                    
+                    if (score > bestScore) {
+                        bestScore = score;
+                    }
+                });
+                
+                totalScore += bestScore;
+                
+                if (bestScore >= 0.7) {
+                    matchedWords++;
+                }
+            });
+            
+            // Итоговая оценка
+            const baseSimilarity = totalScore / targetWords.length;
+            const wordMatchRatio = matchedWords / targetWords.length;
+            
+            const finalSimilarity = (baseSimilarity * 0.7) + (wordMatchRatio * 0.3);
+            
+            return {
+                similarity: Math.min(1.0, finalSimilarity),
+                matchedWords: matchedWords,
+                totalWords: targetWords.length
+            };
+        }
+        
+        // ========== ОСНОВНЫЕ ФУНКЦИИ ==========
+        
+        function startRecording() {
+            if (!recognition || isRecording) return;
+            
+            console.log(`[VoiceCaptcha ${sessionId}] Запуск записи для порога 92%...`);
+            resetResults();
+            
+            try {
+                recognition.start();
+            } catch (error) {
+                console.error(`[VoiceCaptcha ${sessionId}] Ошибка запуска:`, error);
+                showError('Не удалось запустить запись. Обновите страницу и попробуйте снова.');
+            }
+        }
+        
+        function stopRecording() {
+            if (recognition && isRecording) {
+                try {
+                    recognition.stop();
+                } catch (e) {
+                    // Игнорируем ошибки при остановке
+                }
+            }
+            
+            isRecording = false;
+            elements.recordingStatus.classList.remove('active');
+            elements.startBtn.disabled = false;
+            elements.startBtn.classList.remove('recording');
+            elements.stopBtn.disabled = true;
+        }
+        
+        function processResult(transcript, score) {
+            currentScore = score;
+            
+            // Показываем результат
+            elements.resultContainer.classList.add('show');
+            elements.recognizedText.textContent = `"${transcript}"`;
+            
+            // Обновляем визуализацию
+            elements.progressFill.style.width = score + '%';
+            elements.confidenceValue.textContent = score + '%';
+            
+            console.log(`[VoiceCaptcha ${sessionId}] Анализ:
+                Оценка: ${score}%
+                Порог успеха: ${CONFIG.successThreshold}%
+                Высокая точность: ${CONFIG.highAccuracyThreshold}%`);
+            
+            // Проверяем результат
+            if (score >= CONFIG.successThreshold) {
+                handleSuccess(transcript, score);
+            } else {
+                handleFailure(transcript, score);
+            }
+        }
+        
+        function handleSuccess(transcript, score) {
+            console.log(`[VoiceCaptcha ${sessionId}] УСПЕХ! Оценка: ${score}%`);
+            
+            // Визуализация успеха
+            if (score >= CONFIG.highAccuracyThreshold) {
+                elements.resultIcon.textContent = '🎯';
+                elements.resultIcon.style.color = '#00cec9';
+                elements.resultText.textContent = `ВЫСОКАЯ ТОЧНОСТЬ (${score}%)`;
+                elements.resultText.className = 'result-text high-accuracy';
+                elements.resultContainer.classList.add('high-accuracy-animation');
+            } else {
+                elements.resultIcon.textContent = '✅';
+                elements.resultIcon.style.color = '#00b894';
+                elements.resultText.textContent = `УСПЕШНО (${score}%)`;
+                elements.resultText.className = 'result-text success';
+                elements.resultContainer.classList.add('success-animation');
+            }
+            
+            // Сохраняем успех
+            sessionStorage.setItem('captcha2Success', 'true');
+            sessionStorage.setItem('captcha2Phrase', transcript);
+            sessionStorage.setItem('captcha2Score', score);
+            sessionStorage.setItem('captcha2Session', sessionId);
+            
+            // Начинаем обратный отсчет
+            startCountdown();
+        }
+        
+        function handleFailure(transcript, score) {
+            console.log(`[VoiceCaptcha ${sessionId}] НЕУДАЧА Оценка: ${score}%`);
+            
+            // Визуализация неудачи
+            elements.resultIcon.textContent = '❌';
+            elements.resultIcon.style.color = '#fdcb6e';
+            elements.resultText.textContent = `НУЖНО ЛУЧШЕ (${score}%)`;
+            elements.resultText.className = 'result-text error';
+            elements.resultContainer.classList.remove('success-animation', 'high-accuracy-animation');
+            
+            // Подсказки для улучшения
+            const needed = CONFIG.successThreshold - score;
+            elements.recognizedText.innerHTML = `
+                "${transcript}"<br>
+                <small style="color: #fdcb6e;">
+                    ГОВОРИ ЩА  ${needed}% А НАДО ${CONFIG.successThreshold}%<br>
+                    АХАХАХ
+                </small>
+            `;
+        }
+        
+        function startCountdown() {
+            countdownValue = CONFIG.transitionTime;
+            elements.autoTransition.classList.add('show');
+            elements.countdown.textContent = countdownValue;
+            elements.secondsLeft.textContent = countdownValue;
+            
+            // Блокируем кнопки
+            elements.startBtn.disabled = true;
+            elements.stopBtn.disabled = true;
+            
+            console.log(`[VoiceCaptcha ${sessionId}] Обратный отсчет: ${countdownValue} секунд`);
+            
+            transitionTimer = setInterval(() => {
+                countdownValue--;
+                elements.countdown.textContent = countdownValue;
+                elements.secondsLeft.textContent = countdownValue;
+                
+                if (countdownValue <= 0) {
+                    clearInterval(transitionTimer);
+                    completeTransition();
+                }
+            }, 1000);
+        }
+        
+        function completeTransition() {
+            console.log(`[VoiceCaptcha ${sessionId}] Переход на следующую капчу...`);
+            
+            // Сохраняем прогресс
+            localStorage.setItem('captcha2Passed', 'true');
+            localStorage.setItem('captcha2Score', currentScore);
+            localStorage.setItem('captcha2Timestamp', new Date().toISOString());
+            
+            // Показываем финальное сообщение
+            elements.autoTransition.innerHTML = `
+                <div class="countdown" style="color: #00b894;">✅</div>
+                <div class="transition-text">
+                    <strong style="color: #00b894; font-size: 1.2rem;">УСПЕШНОЕ РАСПОЗНАВАНИЕ ${currentScore}%!</strong><br>
+                    Переход к следующему этапу...
+                </div>
+            `;
+            
+            // Переход с задержкой
+            setTimeout(() => {
+                window.location.href = 'captcha3.html';
+            }, 1000);
+        }
+        
+        function resetResults() {
+            elements.resultContainer.classList.remove('show');
+            elements.autoTransition.classList.remove('show');
+            elements.progressFill.style.width = '0%';
+            elements.confidenceValue.textContent = '0%';
+            elements.resultContainer.classList.remove('success-animation', 'high-accuracy-animation');
+            elements.waitingMessage.style.display = 'none';
+            
+            // Восстанавливаем оригинальный блок авто-перехода
+            elements.autoTransition.innerHTML = `
+                <div class="countdown" id="countdown">3</div>
+                <div class="transition-text">
+                    ✅ УСПЕШНОЕ РАСПОЗНАВАНИЕ<br>
+                    Автоматический переход через <span id="secondsLeft">3</span> секунды
+                </div>
+            `;
+            
+            // Обновляем ссылки на элементы
+            elements.countdown = document.getElementById('countdown');
+            elements.secondsLeft = document.getElementById('secondsLeft');
+            
+            if (transitionTimer) {
+                clearInterval(transitionTimer);
+                transitionTimer = null;
+            }
+            
+            // Разблокируем кнопки
+            elements.startBtn.disabled = false;
+            currentScore = 0;
+        }
+        
+        function showError(message) {
+            elements.resultContainer.classList.add('show');
+            elements.resultIcon.textContent = '⚠️';
+            elements.resultIcon.style.color = '#fdcb6e';
+            elements.resultText.textContent = message;
+            elements.resultText.className = 'result-text error';
+            elements.recognizedText.textContent = 'Нет данных';
+            elements.progressFill.style.width = '0%';
+            elements.confidenceValue.textContent = '0%';
+        }
+        
+        function retryRecording() {
+            console.log(`[VoiceCaptcha ${sessionId}] Повторная попытка`);
+            resetResults();
+        }
+        
+        
+        
+        // ========== ЗАПУСК ==========
+        document.addEventListener('DOMContentLoaded', init);
+        
+        // Экспортируем функции для кнопок
+        window.retryRecording = retryRecording;
+    </script>
+</body>
+</html>
